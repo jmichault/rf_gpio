@@ -1,0 +1,27 @@
+
+
+en const_kadro :
+  foliumi ĉiujn kampojn de la komando, kiel sentilo_legi
+  mastrumi la protokolojn P kaj T (inversaj bitoj)
+  administri la BCD
+
+administri pli mallongajn sinkronajn tempojn (vidu Plugins_010.c, TRC02: 1400 μs sinc).
+
+mastrumi specialajn komandojn: (vidu Plugins_010.c de RFLink, TRC02: ).
+
+administri la specialajn kazojn sur la spektaklo:
+kontrolumo: TRC02
+
+
+aldonu kalkulojn aŭ programi specialajn funkciojn por elsendi certajn modelojn
+ekzemplo: X10:
+         ruliĝanta kodo blyss
+
+aldonu komenca sinkronigado, interframe, fina
+
+problemo de mallongaj signaloj:
+vidu RFLink-kromprogramon 011
+
+RFLink-kromprogramon 002: LacrosseV2
+stranga kodiga temperaturo kaj humido
+
