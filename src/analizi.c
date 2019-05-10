@@ -23,7 +23,8 @@
 
 int Verb=0;
 
-static int DATU_PIN=2; // wiringPi GPIO 2 (P1.12)
+// enigo-pinglo
+static int PIN_EN=2; // wiringPi GPIO 2 (P1.12)
 
 /*************************************************
  * tabloj celantaj enhavi:
@@ -63,7 +64,7 @@ void traktilo()
  long momento = micros();
  if(!nb2)
   {
-    val2=digitalRead(DATU_PIN);
+    val2=digitalRead(PIN_EN);
     clock_gettime(CLOCK_REALTIME_COARSE,&tp2);
   }
   antauaDauro=dauro;
@@ -145,7 +146,7 @@ int main(int argc, char *argv[]){
     switch(opt)
     {
      case 'p' :
-      DATU_PIN=atoi(optarg);
+      PIN_EN=atoi(optarg);
       break;
      case 'v' :
       Verb++;
@@ -159,7 +160,7 @@ int main(int argc, char *argv[]){
     return 0;
   }
   antauaMomento = micros();
-  wiringPiISR(DATU_PIN,INT_EDGE_BOTH,&traktilo);
+  wiringPiISR(PIN_EN,INT_EDGE_BOTH,&traktilo);
   while( 1 ){
     if(Traktenda)
     {

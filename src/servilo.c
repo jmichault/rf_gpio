@@ -58,7 +58,7 @@ legado_de_kliento (int DosNum)
   else
   {
     // Datumoj legitaj.
-    if(RFDEBUG) fprintf (stderr, "Servilo: ricevis mesaĝon : %s\n", bufro);
+    if(RFDebug) fprintf (stderr, "Servilo: ricevis mesaĝon : %s\n", bufro);
     if (strlen(bufro) > 7)
     {
       if (strncasecmp (bufro,"10;PING;",8) == 0)

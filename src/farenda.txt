@@ -25,3 +25,4 @@ vidu RFLink-kromprogramon 011
 RFLink-kromprogramon 002: LacrosseV2
 stranga kodiga temperaturo kaj humido
 
+implementi la modojn de sencimigo de RFLINK : RFDEBUG,QRFDEBUG kaj RFUDEBUG.

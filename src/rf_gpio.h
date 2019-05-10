@@ -17,7 +17,7 @@ struct bufroKadro
 {
 long unuaTempo;
 char proto[10]; // protokolo
-  int nbBits;
+  int nbBitoj;
   int D0;
   int D1;
   int D2;

@@ -2,7 +2,7 @@ LDLIBS=-lwiringPi
 CFLAGS=-g
 LDFLAGS=-g
 
-but: analizi bsend rf_gpio sendipulsoj
+but: analizi usend rf_gpio sendipulsoj
 
 ../LisMoi.md : ../LeguMin.md
 	trans -b eo: :fr -i ../LeguMin.md >trans.fr.tmp
@@ -29,5 +29,5 @@ dist:	but
 	make clean
 
 clean:
-	rm *.o analizi rf_gpio toto* trans* nohup.out sendpulses bsend;echo
+	rm *.o analizi sendipulsoj usend rf_gpio toto* trans* nohup.out 2>/dev/null;echo
 
