@@ -109,7 +109,7 @@ printf(" procesas komando %s , id=%x, kanalo=%x ordo=%s\n",komando,id,kanalo,ord
   // procesas la ordo
   // ON/OFF/ALLON/ALLOFF/UP/DOWN/STOP/PAIR//DISCO+/DISCO-/MODE0 - MODE8/BRIGHT/COLOR/DIM/CONFIRM/LIMIT
   int iOrdo=0;
-  if( !strcasecmp(ordo,"ON")) iOrdo=1;
+  if( !strcasecmp(ordo,"ON;")) iOrdo=1;
   // RIPARU MIN : OFF/ALLON/ALLOFF/UP/DOWN/STOP/PAIR//DISCO+/DISCO-/MODE0 - MODE8/BRIGHT/COLOR/DIM/CONFIRM/LIMIT
   ptr = strstr(sentilo->partoj,"CMD:");
   if(ptr)
