@@ -29,18 +29,24 @@ extern int optind, opterr, optopt;
 struct sentilo Sentilo;
 int sendo_kadro(char * buffer, struct sentilo * sentilo);
 
+void uzo()
+{
+  printf(" ekzemple : usend -P p0110,D0=150,D1=490,DS=4800 011100000011110111100011\n");
+}
+
 int main(int argc, char *argv[]){
  int nbr=6;
   int opt;
+  int verb=0;// Paroleco
   memset(&Sentilo,0,sizeof(Sentilo));
   char proto[10]="p0110";
   Sentilo.proto=proto;
-  while( (opt=getopt(argc,argv,"?h:p:P:d:D:2:S:")) != -1)
+  while( (opt=getopt(argc,argv,"?vn:p:P:")) != -1)
   {
     switch(opt)
     {
      case '?' : 
-      printf(" ekzemple : bsend -P p0102 -d 560 -D 1890 -2 3846 -S 9000 010111001011100000001110001100100111\n");
+      uzo();
       break;
      case 'n' : // nombro de ripetoj
       Sentilo.nbKadro=atoi(optarg);
@@ -49,31 +55,47 @@ int main(int argc, char *argv[]){
       PIN_EL=atoi(optarg);
       break;
      case 'P' : // protokolo
-        strcpy(proto,optarg);
-	if(optarg[0] != 'p' && optarg[0] != 't')
-	{
-	  printf("protokolo nekonata %s\n",optarg);
-	  exit(1);
-	}
+      {
+       char * savtok=0;
+       char * strnom=strtok_r(optarg,",",&savtok);
+       Sentilo.proto=strdup(strnom);
+       while(strnom=strtok_r(0,",",&savtok))
+       {
+         char *ptr=strstr(strnom,"=");
+         int val = atoi(ptr+1);
+         if(!memcmp(strnom,"D0",2))
+	   Sentilo.D0=val;
+         else if(!memcmp(strnom,"D1",2))
+   	   Sentilo.D1=val;
+         else if(!memcmp(strnom,"D2",2))
+	   Sentilo.D2=val;
+         else if(!memcmp(strnom,"DS",2))
+	   Sentilo.DS=val;
+         else if(!memcmp(strnom,"bitoj",4))
+	   Sentilo.nbBitoj=val;
+         else if(!memcmp(strnom,"salti",4))
+	   Sentilo.salti=val;
+       }
+      }
       break;
-     case 'd' : // Daŭro 0
-      Sentilo.D0=atoi(optarg);
-      break;
-     case 'D' : // Daŭro 1
-      Sentilo.D1=atoi(optarg);
-      break;
-     case '2' : // Daŭro 2
-      Sentilo.D2=atoi(optarg);
-      break;
-     case 'S' : // Daŭro Sinkronigo
-      Sentilo.DS=atoi(optarg);
+     case 'v' : 
+      verb++;
       break;
     }
+  }
+  if(optind==argc)
+  {
+    uzo();
+    exit(1);
   }
   if (!Sentilo.D0) Sentilo.D0=500;
   if (!Sentilo.D1) Sentilo.D1=3*Sentilo.D0;
   if (!Sentilo.D2) Sentilo.D2=2*Sentilo.D1;
   if (!Sentilo.DS) Sentilo.DS=10*Sentilo.D1;
+  if(verb)
+  {
+    printf(" proto : %s , D0=%d, D1=%d, D2=%d, DS=%d\n",Sentilo.proto,Sentilo.D0,Sentilo.D1,Sentilo.D2,Sentilo.DS);
+  }
 
   if(wiringPiSetup() == -1){
     printf("ne detektis «wiring pi»\n");

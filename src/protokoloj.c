@@ -221,30 +221,32 @@ int sendo_t(char * komando, struct sentilo * sentilo)
 
 int testo_p001(int skipCodes,const char *codes,int ATraiter,struct bufroKadro *bufK)
 {
-          //RIPARU MIN : provi p001
-          // décodage des données en bits :
-	  int nbBit=0;
-          for(int k=0 ; k < ATraiter-3 && codes[k] ; k++,nbBit++)
-            if(codes[k]=='0' && codes[k+1]=='0')
-            {
-              bufK->bin[nbBit]='0';
-              k++;
-            }
-            else if(codes[k]=='1')
-            {
-              bufK->bin[nbBit]='1';
-            }
-            else
-            {
-              if( k< (ATraiter -4))
-              {
-                return false;
-              }
-              nbBit--;
-            }
-          bufK->bin[nbBit]=0;
-          bufK->nbBitoj=nbBit;
-// applique le code manchester :
+  //RIPARU MIN : provi p001
+  // malkodigo de datumoj en bitoj
+  int nbBit=0;
+  for(int k=0 ; k < ATraiter-3 && codes[k] ; k++,nbBit++)
+  {
+    if(codes[k]=='0' && codes[k+1]=='0')
+    {
+      bufK->bin[nbBit]='0';
+      k++;
+    }
+    else if(codes[k]=='1')
+    {
+      bufK->bin[nbBit]='1';
+    }
+    else
+    {
+      if( k< (ATraiter -4))
+      {
+        return false;
+      }
+      nbBit--;
+    }
+  }
+  bufK->bin[nbBit]=0;
+  bufK->nbBitoj=nbBit;
+  // apliki la kodon manchester:
   char oldbit='1';
   for ( int i=0 ; i<nbBit ; i++)
   {
@@ -255,10 +257,8 @@ int testo_p001(int skipCodes,const char *codes,int ATraiter,struct bufroKadro *b
     }
     bufK->bin[i] = oldbit;
   }
-          strcpy(bufK->proto,"p001");
-          //printf(" %d pulsations protocole : \"xxx;p001,bitoj=%d,D0=%d,D1=%d",ATraiter-3,nbBit,temps[0],temps[1]);
-          return true;
-
+  strcpy(bufK->proto,"p001");
+  return true;
 }
 
 int testo_p(int skipCodes,const char *codes,int ATraiter,struct bufroKadro *bufK)
@@ -276,7 +276,7 @@ int testo_p(int skipCodes,const char *codes,int ATraiter,struct bufroKadro *bufK
   int nbBit=0;
   if(i < ATraiter-4)
     return false;
-    // on suppose que le code le plus petit correspond au bit 0
+  // ni supozas, ke la plej malgranda kodo korespondas al bito 0
   if(strcmp(code0,code1) >0)
   {
     char buf[2];
@@ -284,7 +284,7 @@ int testo_p(int skipCodes,const char *codes,int ATraiter,struct bufroKadro *bufK
     memcpy(code0,code1,2);
     memcpy(code1,buf,2);
   }
-  // décodage des données en bits :
+  // malkodigo de datumoj en bitoj:
   for(i=skipCodes ; i < ATraiter-4 && codes[i] ; i+=2)
     if(!memcmp(&codes[i],code0,2))
       bufK->bin[i/2]='0';
