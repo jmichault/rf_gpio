@@ -125,7 +125,7 @@ int trakto_Kadro(struct bufroKadro *bufK)
   for ( int i=0; i<NbSent ;  )
   {
     if ( !strcmp(bufK->proto+1,konatajSensiloj[i].proto+1)
-	&& ( konatajSensiloj[i].D0*92/100 < bufK->D0 ) 
+	&& ( konatajSensiloj[i].D0*88/100 < bufK->D0 ) 
 	&& ( bufK->D0 < konatajSensiloj[i].D0*108/100)
 	&& ( konatajSensiloj[i].D1*92/100 < bufK->D1 ) 
 	&& ( bufK->D1 < konatajSensiloj[i].D1*108/100)

@@ -1,21 +1,26 @@
 /*************************************************************
  * 
  *  komuna al ĉiuj protokoloj :
-trame encadrée par deux temps longs de synchronisation
-temps de synchro > 2500µs
-temps de base > 100µs
-signal le plus long (hors synchro) < 9 temps de base
-au moins 8 signaux par trame
+ * Kadra analizo, por protokoloj respektantaj:
+ * Kadro enmarcado por du longaj tempoj de sincronización
+ * tempo de sinkronigo> 2500μs
+ * plej mallonga tempo> 100μs (falsa por Impuls?)
+ * almenaŭ 8 signalojn por kadro
+ * tempo de sinkronigo> 17 * plej mallonga tempo
+ * ne pli ol tri malsamaj daŭroj por la datumoj
+ * bitoj koditaj per du pulsadoj
+ *
  *********************************************/
 
 #include <wiringPi.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+#include <unistd.h>
 #include <time.h>
 #include <pthread.h>
-#include <unistd.h>
 
 #include "rf_gpio.h"
 #include "sentiloj.h"
@@ -27,103 +32,104 @@ char RFUDebug=0;
 char RFDebug=0;
 char QRFDebug=0;
 
-#define BUFFER_SIZE 256
+#define BUFRO_GRANDECO 256
 
 // enigo-pinglo
-#define PIN_EN 2  // wiringPi GPIO 2 (P1.12)
+static int PIN_EN=2; // wiringPi GPIO 2 (P1.12)
 
 /*************************************************
- *  tableaux destinés à contenir :
- * en 0 : la durée de la dernière pulsation avant la synchro
- * en 1 : la durée de la synchronisation
- * puis les durées des pulsations pour les données
- * et en dernier le temps de la synchro de fin de trame
+ * tabloj celantaj enhavi:
+ *  en 0: la daŭro de la lasta pulso antaŭ la sinkronigo
+ *  en 1: la daŭro de la sinkronigo
+ *  tiam la pulsado-tempoj por la datumoj
+ *  kaj laste la tempo de sinkronigo de la fino de la kadro
  */
-static unsigned long timingsTemp[BUFFER_SIZE+1];
-static unsigned long timings[BUFFER_SIZE+1];
+static unsigned long tempojTemp[BUFRO_GRANDECO+1];
+static unsigned long tempoj[BUFRO_GRANDECO+1];
 
-static char codes[BUFFER_SIZE+1];
-static unsigned long duration = 0;
-static unsigned long oldDuration = 0;
-static unsigned long lastTime = 0;
-static unsigned long Sync = 0;
+// tablo enhavanta la kodojn de daŭro, kiuj respondas al la tempoj
+static unsigned char kodojn[BUFRO_GRANDECO+1];
+static unsigned long dauro = 0;
+static unsigned long antauaDauro = 0;
+static unsigned long antauaMomento = 0;
+static unsigned long Sinc = 0;
 static unsigned int ringIndex = 0;
-static unsigned int syncCount = 0;
-static unsigned int ATraiter = 0;
+static unsigned int sincNb = 0;
+static unsigned int Traktenda = 0;
 static int affiche=0;
 
-int debug=0;
+int Verb=0;
 
+static int kmpUlong(const void * p1, const void *p2)
+{
+    return ( *(unsigned long * )p1 > *(unsigned long *)p2 ? 1:0 );
+}
 
-void handler()
+void traktilo()
 {
  int valeur=digitalRead(PIN_EN);
- long time = micros();
-  oldDuration=duration;
-  duration = time - lastTime;
-  if(Sync>duration*15) Sync=duration*15;
-  lastTime = time;
-//printf(" d : %ld\n",duration);
-  if(!syncCount && (duration >1500) && (duration< 100000) )
+ long momento = micros();
+  antauaDauro=dauro;
+  dauro = momento - antauaMomento;
+  if(Sinc>dauro*15) Sinc=dauro*15;
+  antauaMomento = momento;
+//printf(" d : %ld\n",dauro);
+  if(!sincNb && (dauro >2500) && (dauro< 100000) )
   { // signal long : début de séquence
-    //  if(debug) fprintf(stderr,"départ.\n");
-    timingsTemp[syncCount++]=oldDuration;
-    timingsTemp[syncCount++]=duration;
-    if(duration<10000) Sync=duration; else Sync=17000;
+    //  if(Verb) fprintf(stderr,"départ.\n");
+    tempojTemp[sincNb++]=antauaDauro;
+    tempojTemp[sincNb++]=dauro;
+    if(dauro<10000) Sinc=dauro; else Sinc=17000;
   }
-  else if(duration<80)
-  { // anomalie : on repart à zéro
-    //  if(debug) fprintf(stderr,"signal trop court.\n");
-    syncCount=0;
+  else if(dauro<60)
+  { // anomalio: ni komencas de nulo
+    //  if(Verb) fprintf(stderr,"signal trop court.\n");
+    sincNb=0;
   }
-  else if( duration>(Sync*8)/10  && syncCount)
-  {// fin de séquence 
-    if(duration<10000) Sync=duration; else Sync=17000;
-    timingsTemp[syncCount++]=duration;
-    if( ATraiter)	// données précédentes pas encore traitées
+  else if( dauro>(Sinc*8)/10  && sincNb)
+  {// fino de sekvenco
+    if(dauro<10000) Sinc=dauro; else Sinc=17000;
+    tempojTemp[sincNb++]=dauro;
+    if( Traktenda)	// antaŭaj datumoj ankoraŭ ne prilaboritaj
     {
-      syncCount=0;
-      timingsTemp[syncCount++]=oldDuration;
-      timingsTemp[syncCount++]=duration;
+      sincNb=0;
+      tempojTemp[sincNb++]=antauaDauro;
+      tempojTemp[sincNb++]=dauro;
 //      fprintf(stderr,"trame avant fin de traitement précédent.\n");
       return;
     }
-    if(syncCount<20) 	// pas assez de données
+    if(sincNb<20) 	// ne sufiĉas datumoj
     {
-      //if(debug) fprintf(stderr,"trame trop courte, lgr=%d Sync=%ld.\n",syncCount,Sync);
-      syncCount=0;
-      timingsTemp[syncCount++]=oldDuration;
-      timingsTemp[syncCount++]=duration;
-      if(duration<10000) Sync=duration; else Sync=17000;
+      //if(Verb) fprintf(stderr,"trame trop courte, lgr=%d Sinc=%ld.\n",sincNb,Sinc);
+      sincNb=0;
+      tempojTemp[sincNb++]=antauaDauro;
+      tempojTemp[sincNb++]=dauro;
+      if(dauro<10000) Sinc=dauro; else Sinc=17000;
       return;
     }
-    memmove(timings,timingsTemp,syncCount*sizeof(long));
-    ATraiter=syncCount;
+    memmove(tempoj,tempojTemp,sincNb*sizeof(long));
+    Traktenda=sincNb;
 //    struct timespec tp;
 //    clock_gettime(CLOCK_REALTIME_COARSE,&tp);
 //    printf("\n fin au temps %ld.%02ld \n",tp.tv_sec,tp.tv_nsec/10000000);
-    syncCount=0;
-    timingsTemp[syncCount++]=oldDuration;
-    timingsTemp[syncCount++]=duration;
+    sincNb=0;
+    tempojTemp[sincNb++]=antauaDauro;
+    tempojTemp[sincNb++]=dauro;
   }
-  else if( syncCount>=BUFFER_SIZE )
-  {// pas possible à traiter, on essaie de traiter ce qui est déjà reçu.
+  else if( sincNb>=BUFRO_GRANDECO )
+  {// ne eblas trakti, ni provas trakti tion, kio jam ricevis.
 //      fprintf(stderr,"trame trop longue.\n");
-    memmove(timings,timingsTemp,syncCount*sizeof(long));
-    ATraiter=syncCount;
-    syncCount=0;
+    memmove(tempoj,tempojTemp,sincNb*sizeof(long));
+    Traktenda=sincNb;
+    sincNb=0;
   }
-  else if(syncCount)
-    timingsTemp[syncCount++]=duration;
+  else if(sincNb)
+    tempojTemp[sincNb++]=dauro;
 }
 
 extern void *tcpServilo(void *);
 extern int Haveno;
 
-static int cmpUlong(const void * p1, const void *p2)
-{
-    return ( *(unsigned long * )p1 > *(unsigned long *)p2 ? 1:0 );
-}
 extern char * iniFile;
 
 struct bufroKadro bufK[100];
@@ -135,17 +141,17 @@ void traite_buf()
 
       if(nbBuf>1)
       {
-        if(debug) printf("  nbBuf=%d;proto=%s;bin=%s\n",nbBuf,bufK[nbBuf-1].proto,bufK[nbBuf-1].bin);
+        if(Verb) printf("  nbBuf=%d;proto=%s;bin=%s\n",nbBuf,bufK[nbBuf-1].proto,bufK[nbBuf-1].bin);
         for(int i=0 ; i < nbBuf-1 ; i++)
         {
-          if(bufK[i].unuaTempo < (bufK[nbBuf-1].unuaTempo - 10000))
+          if(bufK[i].unuaTempo < (bufK[nbBuf-1].unuaTempo - 2000))
           {
             memmove(&bufK[i],&bufK[i+1],(nbBuf-i-1)*sizeof(bufK[0]));
             nbBuf--;
             i--;
             continue;
           }
-          if(debug) printf("   nb=%d;proto=%s;bin=%s\n",bufK[i].nb,bufK[i].proto,bufK[i].bin);
+          if(Verb>1) printf("   nb=%d;proto=%s;bin=%s\n",bufK[i].nb,bufK[i].proto,bufK[i].bin);
           if(!strcmp(bufK[i].bin,bufK[nbBuf-1].bin) && !strcmp(bufK[i].proto,bufK[nbBuf-1].proto))
           {
             nbBuf--;
@@ -153,10 +159,10 @@ void traite_buf()
             if(bufK[i].nb == 2)
             {
                 if ( !trakto_Kadro(&bufK[i])) // dans sentiloj.c
-                {
+                { // kadro ne traktita
                   if(strchr(bufK[i].bin,'1')&&strchr(bufK[i].bin,'0'))
 		  {
-                    printf("20;%02X;%s,bitoj=%d,D0=%d,D1=%d",PakaNumero++
+                    printf(" ne traktita :  20;%02X;%s,bitoj=%d,D0=%d,D1=%d",PakaNumero++
                         ,bufK[i].proto
                         ,bufK[i].nbBitoj,bufK[i].D0,bufK[i].D1);
 		    if(bufK[i].D2>1 && strchr(bufK[i].proto,'2'))
@@ -196,17 +202,18 @@ int main(int argc, char *argv[])
       Haveno=atoi(optarg);
       break;
      case 'd' : 
-	demono=1;
+      demono=1;
       break;
      case 'i' :
-	iniFile = optarg;
+      iniFile = optarg;
       break;
      case 'n' : // enigo pinglo
+      PIN_EN=atoi(optarg);
       break;
      case 'l' : // eligo pinglo
       break;
      case 'v' :
-	debug++;
+      Verb++;
       break;
     }
   }
@@ -237,109 +244,109 @@ int main(int argc, char *argv[])
     printf("no wiring pi detected\n");
     return 0;
   }
-  lastTime = micros();
-  wiringPiISR(PIN_EN,INT_EDGE_BOTH,&handler);
+  antauaMomento = micros();
+  wiringPiISR(PIN_EN,INT_EDGE_BOTH,&traktilo);
   int raz=20;
   while(true){
-    if(ATraiter)
+    if(Traktenda)
     {
       raz=20;
       struct timespec tp;
       clock_gettime(CLOCK_REALTIME_COARSE,&tp);
-      if(debug) printf("au temps %ld.%02ld, réception de %d pulsations\n",tp.tv_sec,tp.tv_nsec/10000000,ATraiter);
-      //if(debug) printf(" %ld.%02ld;",tp.tv_sec,tp.tv_nsec/10000000);
-      if(ATraiter<10)
+      if(Verb) printf("au temps %ld.%02ld, réception de %d pulsations\n",tp.tv_sec,tp.tv_nsec/10000000,Traktenda);
+      //if(Verb) printf(" %ld.%02ld;",tp.tv_sec,tp.tv_nsec/10000000);
+      if(Traktenda<10)
       {
 	goto suite;
       }
-      // tri des timings autres que les synchros :
-      unsigned long timingsSort[BUFFER_SIZE+1];
-      memcpy(timingsSort,&timings[2],sizeof(unsigned long)*(ATraiter-3));
-      qsort(timingsSort,ATraiter-3,sizeof(unsigned long),cmpUlong);
-      // calcul des temps moyens
-      int tempsBase=0;
-      int tempsBase0=0;
+      // ordigi tempoj inter sinkronigi
+      unsigned long tempojSort[BUFRO_GRANDECO+1];
+      memcpy(tempojSort,&tempoj[2],sizeof(unsigned long)*(Traktenda-3));
+      qsort(tempojSort,Traktenda-3,sizeof(unsigned long),kmpUlong);
+      // kalkulo de averaĝaj daŭroj
+      int tempoBase=0;
+      int tempoBase0=0;
       int nbEch=0;//nb échantillons
-      unsigned long tempsRef=timingsSort[0];
-      tempsBase=tempsRef;
-      int temps[5];
+      unsigned long tempoRef=tempojSort[0];
+      tempoBase=tempoRef;
+      int tempo[5];
       int nbTemps=0;
-      for ( int i=1 ; i< ATraiter-3 ; i++)
+      for ( int i=1 ; i< Traktenda-3 ; i++)
       {
-	if(timingsSort[i]<10) continue;
-        if(timingsSort[i]>timingsSort[i-1]*3/2 || i==(ATraiter-4))
-        { // on est à la fin d'une suite de temps équivalents
+	if(tempojSort[i]<10) continue;
+        if(tempojSort[i]>tempojSort[i-1]*3/2 || i==(Traktenda-4))
+        { // ni estas je la fino de sekvenco de ekvivalentaj tempoj
 //RIPARU MIN : si nbTemps>=2 et nbEch faiale (<10), alors on a surement plusieurs trames avec un temps de synchro intermédiaire court (voir Plugin_010)...
           if(nbEch)
-          { // on calcule le temps moyen de cette suite
-            tempsBase /= nbEch;
-            temps[nbTemps]=tempsBase;
+          { // ni kalkulas la mezan tempon de ĉi tiu serio
+            tempoBase /= nbEch;
+            tempo[nbTemps]=tempoBase;
             nbTemps++;
           }
-          tempsRef=timingsSort[i];
-          tempsBase=tempsRef;
+          tempoRef=tempojSort[i];
+          tempoBase=tempoRef;
           nbEch=1;
         }
         else
-         { tempsBase += timingsSort[i] ; nbEch++; }
+         { tempoBase += tempojSort[i] ; nbEch++; }
       }
-      // RIPARU MIN : utilisation du temps 3 comme temps de synchro
-      // traitement du header
-      if(temps[0]<10) goto suite;
-      int round=timings[0]/temps[0];
-      if ( (timings[0]-round*temps[0]) > (temps[0]/2) ) round++;
-      round=timings[1]/temps[0];
-      if ( (timings[1]-round*temps[0]) > (temps[0]/2) ) round++;
-      // traitement du footer
+      // RIPARU MIN : uzas tempo 3 kiel tempo de sinkronigo
+      // prilaboro kadro kaplinio
+      if(tempo[0]<10) goto suite;
+      int round=tempoj[0]/tempo[0];
+      if ( (tempoj[0]-round*tempo[0]) > (tempo[0]/2) ) round++;
+      round=tempoj[1]/tempo[0];
+      if ( (tempoj[1]-round*tempo[0]) > (tempo[0]/2) ) round++;
+      // prilaboro piedo de kadro
       int DS=0;
-      if (ATraiter&1)
-      { // on suppose que le footer ne contient qu'une pulsation
-        round=timings[ATraiter-1]/temps[0];
-        if ( (timings[ATraiter-1]-round*temps[0]) > (temps[0]/2) ) round++;
-        DS=timings[ATraiter-1];
+      if (Traktenda&1)
+      { // oni supozas, ke la piedlinio enhavas nur pulsadon
+        round=tempoj[Traktenda-1]/tempo[0];
+        if ( (tempoj[Traktenda-1]-round*tempo[0]) > (tempo[0]/2) ) round++;
+        DS=tempoj[Traktenda-1];
       }
       else
-      { // on suppose que le footer contient deux pulsations
-        round=timings[ATraiter-2]/temps[0];
-        if ( (timings[ATraiter-2]-round*temps[0]) > (temps[0]/2) ) round++;
-        round=timings[ATraiter-1]/temps[0];
-        if ( (timings[ATraiter-1]-round*temps[0]) > (temps[0]/2) ) round++;
-        DS=timings[ATraiter-1];
+      { // oni supozas, ke la piedlinio enhavas du pulsadojn
+        round=tempoj[Traktenda-2]/tempo[0];
+        if ( (tempoj[Traktenda-2]-round*tempo[0]) > (tempo[0]/2) ) round++;
+        round=tempoj[Traktenda-1]/tempo[0];
+        if ( (tempoj[Traktenda-1]-round*tempo[0]) > (tempo[0]/2) ) round++;
+        DS=tempoj[Traktenda-1];
       }
-      bufK[nbBuf].D0=temps[0];
-      bufK[nbBuf].D1=temps[1];
-      bufK[nbBuf].D2=temps[2];
+      bufK[nbBuf].D0=tempo[0];
+      bufK[nbBuf].D1=tempo[1];
+      bufK[nbBuf].D2=tempo[2];
       bufK[nbBuf].DS=DS;
       bufK[nbBuf].salti=0;
       bufK[nbBuf].unuaTempo=tp.tv_sec*1000+tp.tv_nsec/1000000;
       bufK[nbBuf].nb=1;
-      // on transforme les pulsations en codes (0=court, 1= 2e durée, ...)
+      // la pulsadoj estas transformitaj en kodojn (0 = mallonga, 1 = dua daŭro, ...)
       int i;
-      for ( i=2 ; i< ATraiter ; i++)
+      for ( i=2 ; i< Traktenda ; i++)
       {
         int j=0;
         for ( ; j<nbTemps-1 ; j++)
-          if (timings[i] < (temps[j]+temps[j+1])/2 )
+          if (tempoj[i] < (tempo[j]+tempo[j+1])/2 )
           {
-            codes[i-2]='0'+j;
+            kodojn[i-2]='0'+j;
             break;
           }
         if(j==nbTemps-1)
-          codes[i-2]='0'+j;
+          kodojn[i-2]='0'+j;
       }
-      codes[i-2]=0;
-      codes[i-1]=0;
+      kodojn[i-2]=0;
+      kodojn[i-1]=0;
       // maintenant, on teste les divers protocoles :
-      // on regarde si on a un codage de type 2 codes = 1 bit.
+      // ni rigardas ĉu ni havas kodigon 2 kodoj = 1 bito.
       for( int saltiCodes=0 ; saltiCodes<=2 ; saltiCodes++)
       {
-        if( testo_p(saltiCodes,codes,ATraiter,&bufK[nbBuf]) )
+        if( testo_p(saltiCodes,kodojn,Traktenda,&bufK[nbBuf]) )
         {
           bufK[nbBuf].salti=saltiCodes;
 	  traite_buf();
-          bufK[nbBuf].D0=temps[0];
-          bufK[nbBuf].D1=temps[1];
-          bufK[nbBuf].D2=temps[2];
+          bufK[nbBuf].D0=tempo[0];
+          bufK[nbBuf].D1=tempo[1];
+          bufK[nbBuf].D2=tempo[2];
           bufK[nbBuf].DS=DS;
           bufK[nbBuf].unuaTempo=tp.tv_sec*1000+tp.tv_nsec/1000000;
           bufK[nbBuf].salti=0;
@@ -347,19 +354,19 @@ int main(int argc, char *argv[])
 	  break;
         }
       }
-      if( testo_p001(0,codes,ATraiter,&bufK[nbBuf]) )
+      if( testo_p001(0,kodojn,Traktenda,&bufK[nbBuf]) )
       {
 	  traite_buf();
-          bufK[nbBuf].D0=temps[0];
-          bufK[nbBuf].D1=temps[1];
-          bufK[nbBuf].D2=temps[2];
+          bufK[nbBuf].D0=tempo[0];
+          bufK[nbBuf].D1=tempo[1];
+          bufK[nbBuf].D2=tempo[2];
           bufK[nbBuf].DS=DS;
           bufK[nbBuf].salti=0;
           bufK[nbBuf].unuaTempo=tp.tv_sec*1000+tp.tv_nsec/1000000;
           bufK[nbBuf].nb=1;
       }
 suite:
-      ATraiter=0;
+      Traktenda=0;
       delay(2);
     }
     else
