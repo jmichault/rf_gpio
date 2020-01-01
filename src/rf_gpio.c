@@ -274,13 +274,12 @@ int main(int argc, char *argv[])
       for ( int i=1 ; i< Traktenda-3 ; i++)
       {
 	if(tempojSort[i]<10) continue;
-        if(tempojSort[i]>tempojSort[i-1]*3/2 || i==(Traktenda-4))
+        if(tempojSort[i]>tempojSort[i-nbEch/2]*3/2 || i==(Traktenda-4))
         { // ni estas je la fino de sekvenco de ekvivalentaj tempoj
-//RIPARU MIN : si nbTemps>=2 et nbEch faiale (<10), alors on a surement plusieurs trames avec un temps de synchro intermédiaire court (voir Plugin_010)...
+//RIPARU MIN : si nbTemps>=2 et nbEch faible (<10), alors on a surement plusieurs trames avec un temps de synchro intermédiaire court (voir Plugin_010)...
           if(nbEch)
-          { // ni kalkulas la mezan tempon de ĉi tiu serio
-            tempoBase /= nbEch;
-            tempo[nbTemps]=tempoBase;
+          { // ni kalkulas la mediana tempon de ĉi tiu serio
+            tempo[nbTemps]=tempojSort[i-nbEch/2];
             nbTemps++;
           }
           tempoRef=tempojSort[i];
