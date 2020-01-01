@@ -189,7 +189,7 @@ int trakto_Kadro(struct bufroKadro *bufK)
 	  strcat(buffer,";");
 	  goto sekvante_part;
 	}
-	uint32_t val=0;
+	int32_t val=0;
 	uint8_t isDec=0;
         if(!memcmp(nextPtr-4,"-inv",4))
 	  goto sekvante_part;
@@ -249,19 +249,19 @@ int trakto_Kadro(struct bufroKadro *bufK)
 	}
         if (ptrPlus && ptrPlus<nextProp)
         { // 
-	  uint32_t cst;
+	  int32_t cst;
 	  sscanf(ptrPlus+1,"%lx",&cst);
 	  val += cst;
 	}
         if (ptrMul && ptrMul<nextProp)
         { // 
-	  uint32_t cst;
+	  int32_t cst;
 	  sscanf(ptrMul+1,"%lx",&cst);
 	  val *= cst;
 	}
         if (ptrDiv && ptrDiv<nextProp)
         { // 
-	  uint32_t cst;
+	  int32_t cst;
 	  sscanf(ptrDiv+1,"%lx",&cst);
 	  val /= cst;
 	}
