@@ -18,10 +18,13 @@
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
+#include <signal.h>
 
 #define BUFRO_GRANDECO 256
 
 int Verb=0;
+FILE * FicTrace=NULL;
+FILE * FicIn=NULL;
 
 // enigo-pinglo
 static int PIN_EN=2; // wiringPi GPIO 2 (P1.12)
@@ -59,6 +62,10 @@ struct timespec tp2;
 struct timespec tp0;
 struct timespec tp;
 
+void trakti();
+
+
+
 void traktilo()
 {
  long momento = micros();
@@ -69,12 +76,18 @@ void traktilo()
   }
   antauaDauro=dauro;
   dauro = momento - antauaMomento;
+  antauaMomento = momento;
+ trakti();
+}
+
+void trakti()
+{
   if(Sinc>dauro*15) Sinc=dauro*15;
   tempoj2[nb2++]=dauro;
   if(nb2==24)
   {
     nb2=0;
-    if(Verb >=3)
+    if( Verb >=3)
     {
       sprintf(buffer2,"T=%ld.%02ld,v1=%d,%5d,%5d,%5d,%5d,%5d,%5d,%5d,%5d,%5d,%5d,%5d,%5d,%5d,%5d,%5d,%5d,%5d,%5d,%5d,%5d,%5d,%5d,%5d,%5d"
 	,tp2.tv_sec,tp2.tv_nsec/10000000,val2
@@ -83,8 +96,14 @@ void traktilo()
 	,tempoj2[20],tempoj2[21],tempoj2[22],tempoj2[23]);
       puts(buffer2);
     }
+    if(FicTrace)
+    {
+      fprintf(FicTrace,"%5d,%5d,%5d,%5d,%5d,%5d,%5d,%5d,%5d,%5d,%5d,%5d,%5d,%5d,%5d,%5d,%5d,%5d,%5d,%5d,%5d,%5d,%5d,%5d\n"
+	,tempoj2[0],tempoj2[1],tempoj2[2],tempoj2[3],tempoj2[4],tempoj2[5],tempoj2[6],tempoj2[7],tempoj2[8],tempoj2[9]
+	,tempoj2[10],tempoj2[11],tempoj2[12],tempoj2[13],tempoj2[14],tempoj2[15],tempoj2[16],tempoj2[17],tempoj2[18],tempoj2[19]
+	,tempoj2[20],tempoj2[21],tempoj2[22],tempoj2[23]);
+    }
   }
-  antauaMomento = momento;
 //printf(" d : %ld\n",dauro);
   if(!sincNb && (dauro >2500) && (dauro< 100000) )
   { // signal long : début de séquence
@@ -141,10 +160,16 @@ extern int optind, opterr, optopt;
 int main(int argc, char *argv[]){
 
   int opt;
-  while( (opt=getopt(argc,argv,"vp:")) != -1)
+  while( (opt=getopt(argc,argv,"vp:t:i:")) != -1)
   {
     switch(opt)
     {
+     case 'i' :
+      FicIn = fopen(optarg,"r");
+      break;
+     case 't' :
+      FicTrace = fopen(optarg,"w");
+      break;
      case 'p' :
       PIN_EN=atoi(optarg);
       break;
@@ -160,10 +185,12 @@ int main(int argc, char *argv[]){
     return 0;
   }
   antauaMomento = micros();
-  wiringPiISR(PIN_EN,INT_EDGE_BOTH,&traktilo);
+  if(!FicIn)
+    wiringPiISR(PIN_EN,INT_EDGE_BOTH,&traktilo);
   while( 1 ){
     if(Traktenda)
     {
+      if(FicTrace) fflush(FicTrace);
       if(Verb) printf("en momento %ld.%02ld, ricevo de %d pulsadoj\n",tp.tv_sec,tp.tv_nsec/10000000,Traktenda);
       if(Verb >=2)
       {
@@ -189,13 +216,15 @@ int main(int argc, char *argv[]){
       int nbTemps=0;
       for ( int i=1 ; i< Traktenda-3 ; i++)
       {
-        if(tempojSort[i]>tempojSort[i-1]*3/2 || i==(Traktenda-4))
+        if(tempojSort[i]>tempojSort[i-nbEch/2]*3/2 || i==(Traktenda-4))
 	{ // ni estas je la fino de sekvenco de ekvivalentaj tempoj
           if(nbEch)
 	  { // ni kalkulas la mezan tempon de ĉi tiu serio
 	    tempoBase /= nbEch;
-	    tempo[nbTemps]=tempoBase;
-	    if(Verb) printf("  daŭro %d = %d (%d) ;",nbTemps,tempoBase,nbEch);
+	    //tempo[nbTemps]=tempoBase;
+	    int medianTempo=tempojSort[i-nbEch/2];
+	    tempo[nbTemps]=medianTempo;
+	    if(Verb) printf("  daŭro %d = %d-%d (%d) ;",nbTemps,tempoBase,medianTempo,nbEch);
 	    nbTemps++;
           }
 	  tempoRef=tempojSort[i];
@@ -361,7 +390,14 @@ suite:
       Traktenda=0;
     }
     else
-      delay(20);
+    {
+      if(FicIn)
+      {
+	if( fscanf(FicIn,"%d,",&dauro) <= 0) exit(0);
+	trakti();
+      }
+      else delay(20);
+    }
   }
   exit(0);
 }
