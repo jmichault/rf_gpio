@@ -76,6 +76,10 @@ Vi povas tiam aldoni linion en la dosieron sentiloj.ini, ĉiu linio konsistas el
         Vi povas deklari BCD-koditajn kampojn: metu B anstataŭ b. ekzemplo: TEMP:B12-15:B16-19:B20-23 deklaras temperaturtempon kies unua cifero estas en bitoj 12-15, la dua cifero en bitoj 16-20 kaj la tria en bitoj 21-23.  
         Kampo finanta per "-inv" estas speciala kampo kiu prenos la kontraŭan valoron (onia komplemento) de ĝia samnoma kampo en la spektaklo.  
         Vi povas atribui valoron al kampo kiu ne estas en la datumoj uzante "=". ekzemplo: CMD=ON  
+        Ni povas fari simplajn kalkulojn: aldono, multipliko kaj subtraho estas eblaj (en ĉi tiu ĝusta ordo), la konstantoj estas deksesumaj.  
+                 Ekzemplo por konverti datumojn, kiuj estas en dekonoj de °F+900 al dekonoj de °C:  
+                 TEMP: b17-28+-4c4*5/9 (sekve: fina_data = (kruda_data -1220) * 5 / 9)  
+
 
 Ricevinte ĉiujn liniojn, kiuj kontentigas la kondiĉon, generos linion, se vi volas eviti falsajn pozitivaĵojn, vi povas komenti aŭ forigi la liniojn, kiuj ne kongruas kun via materialo.  
 En sendado, nur la unua linio kun la ĝusta aparata nomo estos uzata.  

@@ -71,11 +71,14 @@ Vous pouvez ensuite ajouter une ligne dans le fichier sentiloj.ini, chaque ligne
 		CMD:b21-21 signifie que la commande transmise (ON/OFF) se situe au bit 21.  
 		SWITCH:b22-24 signifie que le numéro de la prise actionnée se trouve aux bits 22 à 24.  
 	Pour être reconnu par domoticz, le nom du champ doit être dans la liste reconnue (voir sentiloj.txt). On peut toutefois mettre ce qu'on veut, simplement le champ sera ignoré par domoticz.  
-	On peut concaténer plusiers suites de bits, exmple : CMD:b17-17:b15-15:b16-16 va concaténer les bits 17 15 et 16 dans cet ordre.  
+	On peut concaténer plusieurs suites de bits, exemple : CMD:b17-17:b15-15:b16-16 va concaténer les bits 17 15 et 16 dans cet ordre.  
 	On peut tester la valeur de certains bits, exemple : CST2:b43-48=1 va vérifier que les bits 43 a 48 contiennent la valeur 1 (hexadécimale) en réception, et va affecter ces bits en émission, CST2:b43-48!1 va vérifier que les bits 43 a 48 ne contiennent pas la valeur 1 (hexadécimale) en réception.  
 	On peut déclarer des champs codés BCD (binaire codé décimal) : mettre B au lieu de b. exemple : TEMP:B12-15:B16-19:B20-23 déclare un champ température dont le premier chiffre se trouve aux bits 12-15, le deuxième aux bits 16 à 20 et le troisième aux bits 21 à 23.  
 	Un champ finissant par «-inv» est un champ spécial qui prendra la valeur inverse (complément à un) de son champ homonyme à l'émission.  
 	On peut affecter une valeur à un champ qui ne se trouve pas dans les données en utilisant «=». exemple : CMD=ON  
+	On peut faire des calculs simples : une addition, une multiplication et une soustraction sont possibles (dans cet ordre exact), les constantes sont en hexadécimal.  
+		Exemple pour convertir en dixièmes de °C une donnée qui est en dixièmes de °F+900:  
+		TEMP:b17-28+-4c4*5/9  ( donc : donnée_finale = (donnée_brute -1220) * 5 / 9 )  
 
 En réception toutes les lignes qui satisfont la condition vont générer une ligne, si vous voulez éviter les faux positifs, vous pouvez mettre en commentaire ou supprimer les lignes qui ne correspondent pas à vos matériels.  
 En émission, seule la première ligne ayant le bon nom de matériel sera utilisée.  
@@ -86,7 +89,7 @@ Si le protocole n'est pas reconnu, vous pouvez utiliser analizi pour l'étudier 
 
 ## PROTOCOLES SUPPORTÉS :
 
-Seuls les protocoles ayant au moins les caractéristiques suivantes sont reconnus :  
+Seuls les protocoles ayant au moins les caractéristiques suivantes ont une chance d'être reconnus :  
 * temps d'une pulsation toujours > 100 µs  
 * pas plus de trois durées différentes pour représenter les données.  
 * chaque bit est codé avec deux pulsations, toujours de la même façon.  
