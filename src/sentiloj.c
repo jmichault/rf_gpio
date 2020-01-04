@@ -278,6 +278,11 @@ int trakto_Kadro(struct bufroKadro *bufK)
           else if(val==7) strcat(buffer,"DIM");
           // RIPARU MIN : UP/DOWN/STOP/PAIR//DISCO+/DISCO-/MODE0 - MODE8/BRIGHT/COLOR/DIM/CONFIRM/LIMIT
         }
+	else if(    !strncmp(ptr,"BAT:",4) )
+        {
+          if(val==0) strcat(buffer,"LOW");
+          else strcat(buffer,"OK");
+        }
 	else
         {
           if (!hasEqual && !hasNot)
