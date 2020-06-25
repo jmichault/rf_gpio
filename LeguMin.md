@@ -23,6 +23,8 @@ se la aparataro estas rekonita, la integriĝo kun domoticz estas simpla: simple 
         la dissendilo estas bone, sed la ricevilo estas tre sensenta (ĉirkaŭ 4 m), por uzi nur por lernaj kodoj.  
 * wl101-341 + wl102-341, superheterodina 433 mhz, vidata ĉe aliexpress je 1 €.  
         la ricevilo havas pli bonan sentemon ol la antaŭa.  
+        
+Notu: Por bonaj rezultoj, la ricevilo devas esti protektita kontraŭ parazitoj elsenditaj de la raspberry-pi. Por testado, vi povas uzi aluminian folion metitan en folion de papero faldita duone.
 
 ## rekonita ekipaĵo:
 estis sukcese testita:  
