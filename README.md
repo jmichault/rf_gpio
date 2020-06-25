@@ -24,6 +24,8 @@ the transmitter is good, but the receiver is very insensitive (about 4 m), for u
 * wl101-341 + wl102-341, superheterodine 433 mhz, seen at aliexpress at € 1.  
 the receiver has a better sensation than the previous one.  
 
+Note: For good results, the receiver must be protected against parasites emitted by the raspberry-pi. For testing, you can use an aluminum foil placed in a sheet of paper folded half.
+
 ## recognized equipment:
 was successfully tested:  
 * Entries kyg (asin: b07dpmpvw1, marked intertek, views on amazon) (known as"impuls")  
