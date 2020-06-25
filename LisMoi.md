@@ -22,6 +22,8 @@ Si le matériel est reconnu, l'intégration avec domoticz est simple : il suffit
 	l'émetteur est OK, mais le récepteur est très peu sensible (portée d'environ 4m), à n'utiliser que pour l'apprentissage des codes.  
 * WL101-341 + WL102-341 , superhétérodyne 433 Mhz, vu sur aliexpress à 1€.  
 	le récepteur a une meilleure sensibilité que le précédent.  
+	
+Remarque: Pour de bons résultats, le récepteur doit être protégé contre les parasites émis par le raspberry-pi. Pour les tests, vous pouvez utiliser une feuille d'aluminium placée dans une feuille de papier pliée en deux.
 
 ## MATÉRIELS RECONNUS :
 ont été testés avec succès :  
