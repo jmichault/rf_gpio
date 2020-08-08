@@ -4,7 +4,9 @@ rf_gpio simulas RFLink kun dissendilo kaj ricevilo ligitaj rekte al la GPIO-have
 
 
 ## INSTALO:
-cd /home/pi/rf_gpio  
+cd /home/pi  
+git clone https://github.com/jmichault/rf_gpio.git  
+cd rf_gpio  
 sudo cp -p rf_gpio.sh /etc/init.d  
 sudo update-rc.d rf_gpio.sh default  
 sudo servo rf_gpio.sh start  
