@@ -8,11 +8,18 @@ cd /home/pi
 git clone https://github.com/jmichault/rf_gpio.git  
 cd rf_gpio  
 sudo cp -p rf_gpio.sh /etc/init.d  
-sudo update-rc.d rf_gpio.sh default  
-sudo servo rf_gpio.sh start  
+sudo systemctl daemon-reload  
+sudo systemctl enable rf_gpio  
+sudo systemctl start rf_gpio  
 
-konekti la ricevilon al gpio2 bcm27 (pinglo 13)  
-konekti la dissendilon al gpio0 bcm17 (pinglo 11)  
+konekti la ricevilon al :  
+* datoj : gpio2 bcm27 (pinglo 13)  
+* plus : 3.3v (pinglo 17)  
+* minus : 0v (pinglo 9)  
+konekti la dissendilon al :  
+* datoj : gpio0 bcm17 (pinglo 11)  
+* minus : 0v (pinglo 9)  
+* plus : 3.3v (pinglo 1 aŭ pinglo 17)  
 
 ## Uzu kun domoticz:  
 aldonu RFLink-enirejon kun LAN-interfaca tipo-aparataro  
