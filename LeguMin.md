@@ -14,7 +14,7 @@ sudo systemctl start rf_gpio
 
 konekti la ricevilon al :  
 * datoj : gpio2 bcm27 (pinglo 13)  
-* plus : 3.3v (pinglo 17)  
+* plus : 5v (pinglo 4)  
 * minus : 0v (pinglo 9) 
 
 konekti la dissendilon al :  
