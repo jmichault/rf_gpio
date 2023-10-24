@@ -11,7 +11,7 @@
  * 
  *********************************************/
 
-#include <wiringPi.h>
+#include <lgpio.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -27,7 +27,10 @@ FILE * FicTrace=NULL;
 FILE * FicIn=NULL;
 
 // enigo-pinglo
-static int PIN_EN=2; // wiringPi GPIO 2 (P1.12)
+//static int PIN_EN=2; // wiringPi GPIO 2 (P1.12)
+static int PIN_EN=27; //  BCM 27
+// lgpio handle
+int Lgpio_h=0;
 
 /*************************************************
  * tabloj celantaj enhavi:
@@ -48,6 +51,28 @@ static unsigned long Sinc = 0;
 static unsigned int sincNb = 0;
 static unsigned int Traktenda = 0;
 
+void delay (unsigned int howLong)
+{
+  struct timespec sleeper, dummy ;
+ 
+  sleeper.tv_sec  = (time_t)(howLong / 1000) ;
+  sleeper.tv_nsec = (long)(howLong % 1000) * 1000000 ;
+ 
+  nanosleep (&sleeper, &dummy) ;
+}
+unsigned int micros (void)
+{
+  uint64_t now ;
+  struct  timespec ts ;
+
+  clock_gettime (CLOCK_MONOTONIC_RAW, &ts) ;
+  now  = (uint64_t)ts.tv_sec * (uint64_t)1000000 + (uint64_t)(ts.tv_nsec / 1000) ;
+  return (uint32_t)(now) ;
+}
+
+
+
+
 static int kmpUlong(const void * p1, const void *p2)
 {
     return ( *(unsigned long * )p1 > *(unsigned long *)p2 ? 1:0 );
@@ -66,12 +91,26 @@ void trakti();
 
 
 
-void traktilo()
+void traktilo(int e, lgGpioAlert_p evt, void *data)
 {
- long momento = micros();
+ long momento ;
+
+int i;
+   int secs, nanos;
+   for (i=0; i<e; i++)
+   {
+      secs = evt[i].report.timestamp / 1000000000L;
+      nanos = evt[i].report.timestamp % 1000000000L;
+      momento = evt[i].report.timestamp /1000L;
+     
+      printf("chip=%d gpio=%d level=%d time=%d.%09d\n",
+         evt[i].report.chip, evt[i].report.gpio, evt[i].report.level,
+         secs, nanos);
+   }
+
  if(!nb2)
   {
-    val2=digitalRead(PIN_EN);
+    //val2=digitalRead(PIN_EN);
     clock_gettime(CLOCK_REALTIME_COARSE,&tp2);
   }
   antauaDauro=dauro;
@@ -179,14 +218,21 @@ int main(int argc, char *argv[]){
     }
   }
 
-
-  if(wiringPiSetup() == -1){
-    printf("no wiring pi detected\n");
-    return 0;
+  Lgpio_h=lgGpiochipOpen(0);
+  if(Lgpio_h <0)
+  {
+    fprintf(stderr,"erreur d'ouverture du chip gpio, %d\n",Lgpio_h);
+    exit(1);
   }
+  else 
+    fprintf(stderr,"chip gpio ouvert\n");
+
   antauaMomento = micros();
   if(!FicIn)
-    wiringPiISR(PIN_EN,INT_EDGE_BOTH,&traktilo);
+  {
+    lgGpioSetAlertsFunc(Lgpio_h, PIN_EN, traktilo, NULL);
+    lgGpioClaimAlert(Lgpio_h, 0, LG_BOTH_EDGES, PIN_EN, -1);
+  }
   while( 1 ){
     if(Traktenda)
     {

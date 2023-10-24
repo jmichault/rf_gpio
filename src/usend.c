@@ -1,7 +1,7 @@
 /* 
  */
 
-#include <wiringPi.h>
+#include <lgpio.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -21,7 +21,9 @@ void tcp_sendiCxiuj(const char *buffer,int len)
 uint8_t PakaNumero=0;
 
 // eligo-pinglo
-extern int PIN_EL;  // wiringPi GPIO 0 
+extern int PIN_EL; 
+// lgpio
+int Lgpio_h=0;
 
 extern char *optarg;
 extern int optind, opterr, optopt;
@@ -97,10 +99,7 @@ int main(int argc, char *argv[]){
     printf(" proto : %s , D0=%d, D1=%d, D2=%d, DS=%d\n",Sentilo.proto,Sentilo.D0,Sentilo.D1,Sentilo.D2,Sentilo.DS);
   }
 
-  if(wiringPiSetup() == -1){
-    printf("ne detektis «wiring pi»\n");
-    return 0;
-  }
+  Lgpio_h=lgGpiochipOpen(0);
   if ( strlen(argv[optind]) >300)
   {
     fprintf(stderr," Datumoj tro longe (300 maksimumo).\n");

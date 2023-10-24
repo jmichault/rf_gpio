@@ -1,4 +1,4 @@
-#include <wiringPi.h>
+#include <lgpio.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -10,7 +10,9 @@
 #include "sentiloj.h"
 
 // eligo pinglo
-int PIN_EL=0;
+// int PIN_EL=0; //wiringPi
+int PIN_EL=17;
+extern int Lgpio_h;
 
 struct timespec sekvaMomento;
 
@@ -28,16 +30,16 @@ void dormi( int microSecs)
 
 void pravaloriziSendo()
 {
-  pinMode(PIN_EL, OUTPUT);
-  digitalWrite(PIN_EL, LOW);
+  lgGpioClaimOutput(Lgpio_h, 0, PIN_EL, 0);
+  lgGpioWrite(Lgpio_h, PIN_EL, 0);
   clock_gettime(CLOCK_MONOTONIC, &sekvaMomento);
 }
 
 void sendiParon(int Tempo1,int Tempo2)
 {
-  digitalWrite(PIN_EL, HIGH);
+  lgGpioWrite(Lgpio_h, PIN_EL, 1);
   dormi( Tempo1 );
-  digitalWrite(PIN_EL, LOW);
+  lgGpioWrite(Lgpio_h, PIN_EL, 0);
   dormi( Tempo2 );
 }
 
@@ -157,7 +159,7 @@ int sendo_kadro(char * buffer, struct sentilo * sentilo)
   pravaloriziSendo();
   sendiParon(sentilo->D0,sentilo->D0);
   sendiParon(sentilo->D0,sentilo->DS);
-  for( int j=0 ; j <6 ; j++)
+  for( int j=0 ; j <10 ; j++)
   {
     for (int i=0 ; buffer[i] ; i++)
       if(buffer[i]=='0')

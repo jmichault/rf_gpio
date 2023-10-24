@@ -1,4 +1,4 @@
-LDLIBS=-lwiringPi -lrt
+LDLIBS=-llgpio -lrt
 CFLAGS=-g
 LDFLAGS=-g
 
@@ -20,7 +20,7 @@ sentiloj.o : rf_gpio.h protokoloj.h sentiloj.h sentiloj.c
 	gcc $(CFLAGS) -c $*.c
 	
 rf_gpio : rf_gpio.o servilo.o protokoloj.o sentiloj.o
-	gcc -g -o $@ $^ -lwiringPi -lpthread
+	gcc -g -o $@ $^ -llgpio -lpthread
 
 
 dist:	but

@@ -148,7 +148,7 @@ legado_de_kliento (int DosNum)
 
 void *tcpServilo(void * x)
 {
- size_t grandeco;
+ unsigned int grandeco;
   // konektilo krei
   ServKon = socket(AF_INET, SOCK_STREAM, 0);
   if (ServKon == -1)

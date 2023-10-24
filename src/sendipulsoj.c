@@ -1,4 +1,4 @@
-#include <wiringPi.h>
+#include <lgpio.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -6,7 +6,8 @@
 #include <time.h>
 
 // eligo-pinglo 
-int PIN_EL=0;
+int PIN_EL=17;
+int Lgpio_h;
 
 struct timespec SekvaMomento;
 
@@ -25,38 +26,35 @@ void dormi( int microSecs)
 
 void initSend()
 {
-  pinMode(PIN_EL, OUTPUT);
-  digitalWrite(PIN_EL, LOW);
+  lgGpioClaimOutput(Lgpio_h, 0, PIN_EL, 0);
+  lgGpioWrite(Lgpio_h, PIN_EL, 0);
   clock_gettime(CLOCK_MONOTONIC, &SekvaMomento);
 }
 
 void sendiParon(int Tempo1,int Tempo2)
 {
-  digitalWrite(PIN_EL, HIGH); 
+  lgGpioWrite(Lgpio_h, PIN_EL, 1);
   dormi( Tempo1 );
-  digitalWrite(PIN_EL, LOW);
+  lgGpioWrite(Lgpio_h, PIN_EL, 0);
   dormi( Tempo2 );
 }
 
 
 int main(int argc, char *argv[])
 {
-  if(wiringPiSetup() == -1){
-    printf("ne detektis «wiring pi»\n");
-    return 0;
-  }
+  Lgpio_h=lgGpiochipOpen(0);
   initSend();
   sendiParon(500,500);
-  int nivelo=HIGH;
+  int nivelo=1;
   for (int i=0 ; i<7 ; i++)
   {
     char * ptr=argv[1];
     do
     {
       int pulse=atoi(ptr);
-      digitalWrite(PIN_EL, nivelo); 
-      if (nivelo==HIGH) nivelo=LOW;
-      else nivelo=HIGH;
+      lgGpioWrite(Lgpio_h, PIN_EL, nivelo);
+      if (nivelo==1) nivelo=0;
+      else nivelo=1;
       ptr = strstr(ptr,",");
       dormi( pulse );
     } while (ptr++);
